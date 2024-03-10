@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gofrs/uuid/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var users = make(map[email]User)
@@ -28,7 +29,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 	user := users[data.Email]
 	u := User{}
-	if user == u || user.Password != data.Password {
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data.Password))
+	if user == u || err != nil {
 		http.Error(w, "Wrong email or password", http.StatusUnauthorized)
 		// log.Println(err.Error())
 		return
@@ -36,6 +38,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	token, err := uuid.NewV4()
 	if err != nil {
 		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:  "session_token",
@@ -77,7 +80,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "This email is already registered", http.StatusConflict)
 		return
 	}
-
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(registrationData.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	registrationData.Password = string(hashedPass)
 	users[registrationData.Email] = registrationData
 	registrationData.Password = ""
 	response := Response{

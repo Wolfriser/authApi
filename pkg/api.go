@@ -10,6 +10,7 @@ type User struct {
 	Name        string `json:"name"`
 	PhoneNumber string `json:"phone_number"`
 	Token       string `json:"session_token"`
+	IsAdmin     bool   `json:"is_admin"`
 }
 
 type LoginData struct {
