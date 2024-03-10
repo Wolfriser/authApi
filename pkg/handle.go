@@ -7,8 +7,8 @@ import (
 	"net/http"
 )
 
-var users map[email]User
-var userTokens map[string]email
+var users = make(map[email]User)
+var userTokens = make(map[string]email)
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -37,6 +37,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Value: token,
 		Path:  "/",
 	})
+	user.Token = token
 	userTokens[token] = data.Email
 	response := Response{
 		Success: true,
@@ -71,10 +72,13 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "This email is already registered", http.StatusConflict)
 		return
 	}
+
 	users[registrationData.Email] = registrationData
+	registrationData.Password = ""
 	response := Response{
 		Success: true,
 		Message: "Registration successful",
+		User:    registrationData,
 	}
 	j, err := json.Marshal(response)
 	if err != nil {
@@ -95,19 +99,31 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	token := cookie.Value
-	email := userTokens[token]
-	if email == "" {
+	email, ok := userTokens[cookie.Value]
+	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 	body, _ := ioutil.ReadAll(r.Body)
-	var UpdateData User
-	err = json.Unmarshal(body, &UpdateData)
+	var updateData User
+	err = json.Unmarshal(body, &updateData)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		log.Println(err.Error())
 		return
 	}
-	
+	users[email] = updateData
+	user := users[email]
+	response := Response{
+		Success: true,
+		Message: "User data updated successfully",
+		User:    user,
+	}
+	j, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		log.Println(err.Error())
+		return
+	}
+	w.Write(j)
 }

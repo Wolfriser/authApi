@@ -9,6 +9,7 @@ type User struct {
 	Birthday    string `json:"birthday"`
 	Name        string `json:"name"`
 	PhoneNumber string `json:"phone_number"`
+	Token       string `json:"session_token"`
 }
 
 type LoginData struct {
