@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/gofrs/uuid/v5"
 )
 
 var users = make(map[email]User)
@@ -31,14 +33,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// log.Println(err.Error())
 		return
 	}
-	token := "dfghjk"
+	token, err := uuid.NewV4()
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:  "session_token",
-		Value: token,
+		Value: token.String(),
 		Path:  "/",
 	})
-	user.Token = token
-	userTokens[token] = data.Email
+	userTokens[token.String()] = data.Email
+	user.Password = ""
 	response := Response{
 		Success: true,
 		Message: "Login successful",
@@ -114,6 +119,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	}
 	users[email] = updateData
 	user := users[email]
+	user.Password = ""
 	response := Response{
 		Success: true,
 		Message: "User data updated successfully",
