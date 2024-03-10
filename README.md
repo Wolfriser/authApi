@@ -16,4 +16,4 @@ Procedure for the user:
 
 ### **Autors**
 
-[@tsvetash](https://github.com/Wolfriser/)
+[@Wolfriser](https://github.com/Wolfriser/)
