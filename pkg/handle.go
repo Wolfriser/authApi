@@ -10,8 +10,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var users = make(map[email]User)
+var temp = make(map[email]User)
 var userTokens = make(map[string]email)
+var films = make(map[string]Film)
+var users = Admin(temp)
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -47,6 +49,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	})
 	userTokens[token.String()] = data.Email
 	user.Password = ""
+	log.Println(token)
 	response := Response{
 		Success: true,
 		Message: "Login successful",
@@ -72,6 +75,10 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		log.Println(err.Error())
+		return
+	}
+	if registrationData.IsAdmin {
+		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 	user := users[registrationData.Email]
@@ -140,4 +147,59 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(j)
+}
+
+func CreateFilm(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	email, ok := userTokens[cookie.Value]
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if !users[email].IsAdmin {
+		http.Error(w, "Forbidden: User does not have admin access", http.StatusForbidden)
+		return
+	}
+	body, _ := ioutil.ReadAll(r.Body)
+	var filmData Film
+	err = json.Unmarshal(body, &filmData)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		log.Println(err.Error())
+		return
+	}
+	films[filmData.Name] = filmData
+	response := Response{
+		Success: true,
+		Message: "Film data uploaded successfuly",
+	}
+	j, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		log.Println(err.Error())
+		return
+	}
+	w.Write(j)
+}
+
+func Admin(m map[email]User) map[email]User {
+	pass, err := bcrypt.GenerateFromPassword([]byte("0000"), bcrypt.DefaultCost)
+	if err != nil {
+		return nil
+	}
+	adminData := User{
+		Email:    "admin",
+		Password: string(pass),
+		IsAdmin:  true,
+	}
+	m["admin"] = adminData
+	return m
 }

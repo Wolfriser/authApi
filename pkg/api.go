@@ -13,6 +13,18 @@ type User struct {
 	IsAdmin     bool   `json:"is_admin"`
 }
 
+type Film struct {
+	Name           string `json:"name"`
+	Category       string `json:"category"`
+	Type           string `json:"type"`
+	AgeRestriction string `json:"age_restriction"`
+	Year           int    `json:"year"`
+	Lenght         int    `json:"lenght"`
+	KeyWords       string `json:"key_words"`
+	Description    string `json:"description"`
+	Director       string `json:"director"`
+}
+
 type LoginData struct {
 	Email    email  `json:"email"`
 	Password string `json:"password"`
